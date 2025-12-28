@@ -1,0 +1,91 @@
+proc sql noprint;
+	create table HMW.SAL2 as select * from HMW.SAL1 
+		where(put(employment_type, $2.) EQ 'FT');
+quit;
+
+/* Compute percentile values */
+proc univariate data=HMW.SAL2 noprint;
+	var salary_in_usd;
+	output out=_tmppct pctlpts=99 pctlpre=salary_in_usd;
+run;
+
+data _null_;
+	set _tmppct;
+	call symput('pctile1', salary_in_usd99);
+run;
+
+proc sql noprint;
+	create table HMW.SAL3 as select * from HMW.SAL2 
+		where(salary_in_usd LT &pctile1);
+quit;
+
+proc delete data=_tmppct;
+run;
+
+
+Data HMW.SAL3;
+ set HMW.SAL3;
+ job_role = ' ' ;
+run;
+
+Data HMW.SAL3;
+  length job_role $ 20 ;
+  set HMW.SAL3;
+run;
+
+
+
+proc sql;
+    update HMW.SAL3
+    set job_role='Developer'
+    where job_title in ('Engineer','Software Engineer','System Engineer','Software Developer','Software Developme','Developer','Solutions Engineer');
+
+    update HMW.SAL3
+    set job_role='AI'
+    where job_title like 'AI%'
+    or job_title in ('Machine Learning E');
+    
+    update HMW.SAL3
+    set job_role='Data Science'
+    where job_title in ('Data Scientist','Data Analyst','Data Engineer','Data Analyst','Business Intellige','Data Architect','Data Manager');
+
+    update HMW.SAL3
+    set job_role='Managment'
+    where job_title in ('Manager','Data Product Owner','Product Manager','Product Owner');
+    
+    update HMW.SAL3
+    set job_role='Research'
+    where job_title in ('Research Scientist','Research Engineer','Applied Scientist','Postdoctoral Fello');
+    
+    
+quit;
+
+
+Data HMW.SAL3;
+ set HMW.SAL3;
+ office_based = 'False' ;
+run;
+
+
+proc sql;
+    update HMW.SAL3
+    set office_based ='True'
+    where remote_ratio = 0;
+quit;
+
+Data HMW.SAL3;
+ set HMW.SAL3;
+ all_remote = 'False' ;
+run;
+
+
+proc sql;
+    update HMW.SAL3
+    set all_remote ='True'
+    where remote_ratio = 100;
+quit;
+
+
+proc sql noprint;
+	create table HMW.SAL7 as select * from HMW.SAL3;
+quit;
